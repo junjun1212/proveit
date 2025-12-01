@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    container_name: proveit-db
+    environment:
+      POSTGRES_USER: proveit
+      POSTGRES_PASSWORD: proveit
+      POSTGRES_DB: proveit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
