@@ -12,6 +12,10 @@ Table users {
   is_verified boolean [default: false]
   created_at timestamp [default: `now()`]
   updated_at timestamp
+  x_id varchar
+  x_username varchar
+  x_verified boolean [default: false]
+  x_linked_at timestamp
 }
 
 Table user_profiles {
@@ -258,5 +262,18 @@ Table user_badges {
 
   indexes {
     (user_id, badge_id) [unique]
+  }
+}
+
+Table user_pinned_predictions {
+  id serial [pk]
+  user_id int [ref: > users.id]
+  prediction_id int [ref: > predictions.id]
+  title varchar [not null]
+  sort_order int [default: 0]
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (user_id, prediction_id) [unique]
   }
 }

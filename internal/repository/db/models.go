@@ -168,6 +168,10 @@ type User struct {
 	IsVerified   pgtype.Bool      `json:"is_verified"`
 	CreatedAt    pgtype.Timestamp `json:"created_at"`
 	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+	XID          pgtype.Text      `json:"x_id"`
+	XUsername    pgtype.Text      `json:"x_username"`
+	XVerified    pgtype.Bool      `json:"x_verified"`
+	XLinkedAt    pgtype.Timestamp `json:"x_linked_at"`
 }
 
 type UserBadge struct {
@@ -209,6 +213,15 @@ type UserNotificationSetting struct {
 	EmailEnabled   pgtype.Bool      `json:"email_enabled"`
 	CreatedAt      pgtype.Timestamp `json:"created_at"`
 	UpdatedAt      pgtype.Timestamp `json:"updated_at"`
+}
+
+type UserPinnedPrediction struct {
+	ID           int32            `json:"id"`
+	UserID       pgtype.Int4      `json:"user_id"`
+	PredictionID pgtype.Int4      `json:"prediction_id"`
+	Title        string           `json:"title"`
+	SortOrder    pgtype.Int4      `json:"sort_order"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
 }
 
 type UserProfile struct {
