@@ -4,12 +4,21 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/junjun1212/proveit/internal/config"
+	"github.com/junjun1212/proveit/internal/handler"
 )
 
 func main() {
+	// 設定読み込み
+	cfg := config.Load()
+
+	// Gin初期化
 	r := gin.Default()
 
-	// ヘルスチェック用エンドポイント
+	// ハンドラ初期化
+	authHandler := handler.NewAuthHandler(cfg.JWTSecret)
+
+	// ヘルスチェック
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
@@ -19,13 +28,14 @@ func main() {
 	// API グループ
 	api := r.Group("/api")
 	{
-		api.GET("/", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "Welcome to ProveIt API",
-			})
-		})
+		// 認証
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/login", authHandler.Login)
+		}
 	}
 
-	// サーバー起動（ポート8080）
-	r.Run(":8080")
+	// サーバー起動
+	r.Run(":" + cfg.Port)
 }
