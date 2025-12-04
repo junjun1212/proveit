@@ -1,21 +1,25 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/junjun1212/proveit/internal/repository/db"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
 	jwtSecret []byte
+	queries   *db.Queries
 }
 
-func NewAuthHandler(jwtSecret string) *AuthHandler {
+func NewAuthHandler(jwtSecret string, queries *db.Queries) *AuthHandler {
 	return &AuthHandler{
 		jwtSecret: []byte(jwtSecret),
+		queries:   queries,
 	}
 }
 
@@ -61,14 +65,14 @@ func CheckPassword(password, hash string) bool {
 func (h *AuthHandler) GenerateToken(userID int32) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(), // 7日間有効
+		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(h.jwtSecret)
 }
 
-// 登録ハンドラ（仮実装）
+// 登録ハンドラ
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -76,16 +80,44 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// TODO: DBにユーザーを保存
-	// 今は仮のレスポンスを返す
-	c.JSON(http.StatusOK, gin.H{
-		"message":  "Registration endpoint (not implemented yet)",
-		"email":    req.Email,
-		"username": req.Username,
+	// パスワードをハッシュ化
+	hashedPassword, err := HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	// ユーザーを作成
+	user, err := h.queries.CreateUser(context.Background(), db.CreateUserParams{
+		Email:        req.Email,
+		Username:     req.Username,
+		DisplayName:  req.DisplayName,
+		PasswordHash: hashedPassword,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or username already exists"})
+		return
+	}
+
+	// トークン生成
+	token, err := h.GenerateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, AuthResponse{
+		Token: token,
+		User: UserResponse{
+			ID:          user.ID,
+			Email:       user.Email,
+			Username:    user.Username,
+			DisplayName: user.DisplayName,
+		},
 	})
 }
 
-// ログインハンドラ（仮実装）
+// ログインハンドラ
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -93,10 +125,33 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// TODO: DBからユーザーを取得して検証
-	// 今は仮のレスポンスを返す
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Login endpoint (not implemented yet)",
-		"email":   req.Email,
+	// ユーザーを取得
+	user, err := h.queries.GetUserByEmail(context.Background(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	// パスワードを検証
+	if !CheckPassword(req.Password, user.PasswordHash) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	// トークン生成
+	token, err := h.GenerateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, AuthResponse{
+		Token: token,
+		User: UserResponse{
+			ID:          user.ID,
+			Email:       user.Email,
+			Username:    user.Username,
+			DisplayName: user.DisplayName,
+		},
 	})
 }
