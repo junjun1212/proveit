@@ -32,6 +32,7 @@ func main() {
 
 	// ハンドラ初期化
 	authHandler := handler.NewAuthHandler(cfg.JWTSecret, queries)
+	userHandler := handler.NewUserHandler(queries)
 
 	// ヘルスチェック
 	r.GET("/health", func(c *gin.Context) {
@@ -54,13 +55,7 @@ func main() {
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 		{
-			protected.GET("/users/me", func(c *gin.Context) {
-				userID, _ := c.Get("user_id")
-				c.JSON(http.StatusOK, gin.H{
-					"user_id": userID,
-					"message": "You are authenticated!",
-				})
-			})
+			protected.GET("/users/me", userHandler.GetMe)
 		}
 	}
 
