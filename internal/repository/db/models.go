@@ -55,6 +55,10 @@ type Follow struct {
 	FollowerID  pgtype.Int4      `json:"follower_id"`
 	FollowingID pgtype.Int4      `json:"following_id"`
 	CreatedAt   pgtype.Timestamp `json:"created_at"`
+	// フォロー元: question / prediction / profile / search / suggestion
+	SourceType pgtype.Text `json:"source_type"`
+	// フォロー元のID（question_id または prediction_id）
+	SourceID pgtype.Int4 `json:"source_id"`
 }
 
 type Notification struct {
@@ -84,6 +88,10 @@ type Prediction struct {
 	CreatedAt                  pgtype.Timestamp `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamp `json:"updated_at"`
 	JudgedAt                   pgtype.Timestamp `json:"judged_at"`
+	// 結果発表後の振り返りコメント
+	PostMortem pgtype.Text `json:"post_mortem"`
+	// 振り返り投稿日時
+	PostMortemAt pgtype.Timestamp `json:"post_mortem_at"`
 }
 
 type PredictionChange struct {
@@ -104,6 +112,8 @@ type PredictionReaction struct {
 	IsHelpful    pgtype.Bool      `json:"is_helpful"`
 	CreatedAt    pgtype.Timestamp `json:"created_at"`
 	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+	// 評価対象: reason(根拠) / post_mortem(振り返り)
+	TargetType pgtype.Text `json:"target_type"`
 }
 
 type Question struct {
@@ -123,6 +133,12 @@ type Question struct {
 	JudgedAt         pgtype.Timestamp `json:"judged_at"`
 	CreatedAt        pgtype.Timestamp `json:"created_at"`
 	UpdatedAt        pgtype.Timestamp `json:"updated_at"`
+	// 正解判定時のソースURL
+	ResultSourceUrl pgtype.Text `json:"result_source_url"`
+	// 正解判定の理由・説明
+	ResultDescription pgtype.Text `json:"result_description"`
+	// 公開範囲: public / private / followers
+	Visibility pgtype.Text `json:"visibility"`
 }
 
 type QuestionStat struct {
@@ -135,6 +151,10 @@ type QuestionStat struct {
 	HourlyPredictions  []byte           `json:"hourly_predictions"`
 	ChoiceDistribution []byte           `json:"choice_distribution"`
 	UpdatedAt          pgtype.Timestamp `json:"updated_at"`
+	// シェアされた回数
+	ShareCount pgtype.Int4 `json:"share_count"`
+	// ユニーク閲覧者数
+	UniqueViewers pgtype.Int4 `json:"unique_viewers"`
 }
 
 type QuestionView struct {
@@ -143,6 +163,10 @@ type QuestionView struct {
 	UserID     pgtype.Int4      `json:"user_id"`
 	SessionID  pgtype.Text      `json:"session_id"`
 	ViewedAt   pgtype.Timestamp `json:"viewed_at"`
+	// 流入元: x / feed / profile / direct / search
+	Referrer pgtype.Text `json:"referrer"`
+	// デバイス: ios / android / web
+	Device pgtype.Text `json:"device"`
 }
 
 type Report struct {
